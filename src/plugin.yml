@@ -1,0 +1,11 @@
+name: PlugMan
+main: com.bekvon.bukkit.plugman.PlugMan
+version: 1.2.2
+description: Plugin Manager Mod for Bukkit
+author: bekvon
+commands:
+  plugman:
+    description: Manage Plugins Status.
+    usage: /plugman [list]
+           /plugman [load|reload|disable|enable|info|usage] [PluginName]
+           /plugman [describe] [CommandName] [PluginName]
