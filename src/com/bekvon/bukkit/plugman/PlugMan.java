@@ -17,6 +17,7 @@ import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijiko.permissions.PermissionHandler;
@@ -39,10 +40,6 @@ public class PlugMan extends JavaPlugin {
     {
 
     }
-
-    //public PlugMan(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
-    //    super(pluginLoader, instance, desc, folder, plugin, cLoader);
-    //}
 
     public void onDisable() {
         mcserver = null;
@@ -77,8 +74,25 @@ public class PlugMan extends JavaPlugin {
         }
 
         String command = args[0];
-        if (command.equals("list")) {
-            listPlugins(sender);
+
+        if (command.equals("list") || command.equals("vlist")) {
+            if (args.length >= 2) {
+                try {
+                    int page = Integer.parseInt(args[1]);
+                    if (command.equals("vlist")) {
+                        listPluginsByPage(sender,page, true);
+                    } else {
+                        listPluginsByPage(sender, page, false);
+                    }
+                } catch (Exception ex) {
+                }
+                return true;
+            }
+            if (command.equals("vlist")) {
+                listPlugins(sender, true);
+            } else {
+                listPlugins(sender, false);
+            }
             return true;
         }
         
@@ -157,7 +171,10 @@ public class PlugMan extends JavaPlugin {
     private boolean checkAuthority(CommandSender sender, String permission) {
         if (permPlug != null && authority != null && permPlug.isEnabled()) {
             if (sender instanceof Player) {
-                if (authority.has((Player) sender, permission)) {
+                Player player = (Player) sender;
+                if(player.isOp())
+                    return true;
+                if (authority.has(player, permission)) {
                     return true;
                 } else {
                     return false;
@@ -180,7 +197,51 @@ public class PlugMan extends JavaPlugin {
         }
     }
 
-    private void listPlugins(CommandSender sender) {
+    private void listPluginsByPage(CommandSender sender, int page, boolean appendVersion) {
+        if (!checkAuthority(sender, "plugman.admin") && !checkAuthority(sender, "plugman.list")) {
+            sender.sendMessage("§cYou don't have permission to do this...");
+            return;
+        }
+        StringBuilder pluginList = new StringBuilder();
+        Plugin[] plugins = serverPM.getPlugins();
+        int pagecount = (int) Math.ceil(((double)plugins.length) / ((double)10));
+        if(page>pagecount || page < 1)
+        {
+            sender.sendMessage("§cInvalid page...");
+            return;
+        }
+        pluginList.append("§ePlugin List <Page §a").append(page).append("§e of §a").append(pagecount).append("§e>: ");
+
+        page = page - 1;
+        int firstplugin = 10 * page;
+        int lastplugin = (10 * page) + 10;
+        if(firstplugin>=plugins.length)
+        {
+            sender.sendMessage(pluginList.toString());
+            return;
+        }
+        if(lastplugin >=plugins.length)
+        {
+            lastplugin = plugins.length;
+        }
+
+        for (int i = firstplugin; i < lastplugin; i++) {
+            Plugin thisPlugin = plugins[i];
+            if (thisPlugin.isEnabled()) {
+                pluginList.append(" §a\"");
+            } else {
+                pluginList.append(" §c\"");
+            }
+            pluginList.append(thisPlugin.getDescription().getName());
+            if (appendVersion) {
+                pluginList.append(" [").append(thisPlugin.getDescription().getVersion()).append("]");
+            }
+            pluginList.append("\"");
+        }
+        sender.sendMessage(pluginList.toString());
+    }
+
+    private void listPlugins(CommandSender sender, boolean appendVersion) {
         if (!checkAuthority(sender, "plugman.admin") && !checkAuthority(sender, "plugman.list")) {
             sender.sendMessage("§cYou don't have permission to do this...");
             return;
@@ -192,17 +253,15 @@ public class PlugMan extends JavaPlugin {
 
         for (int i = 0; i < plugins.length; i++) {
             Plugin thisPlugin = plugins[i];
-            if (thisPlugin.getDescription().getName().length() + pluginList.length() > 55) {
-                sender.sendMessage(pluginList.toString());
-                pluginList = new StringBuilder();
-
-            }
             if (thisPlugin.isEnabled()) {
                 pluginList.append(" §a\"");
             } else {
-                pluginList.append(" §c");
+                pluginList.append(" §c\"");
             }
-            pluginList.append(thisPlugin.getDescription().getName()).append("\"");
+            pluginList.append(thisPlugin.getDescription().getName());
+            if(appendVersion)
+                pluginList.append(" [").append(thisPlugin.getDescription().getVersion()).append("]");
+            pluginList.append("\"");
         }
         sender.sendMessage(pluginList.toString());
     }
@@ -317,6 +376,8 @@ public class PlugMan extends JavaPlugin {
                 } else {
                     sender.sendMessage("§ePlugin §cFAILED§e to Load!");
                 }
+            } catch (UnknownDependencyException ex) {
+                sender.sendMessage("§cFile exists but is not a plugin file.");
             } catch (InvalidPluginException ex) {
                 sender.sendMessage("§cFile exists but is not a plugin file.");
             } catch (InvalidDescriptionException ex) {
