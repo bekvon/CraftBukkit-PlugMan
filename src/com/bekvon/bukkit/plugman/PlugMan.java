@@ -174,25 +174,25 @@ public class PlugMan extends JavaPlugin {
                 Player player = (Player) sender;
                 if(player.isOp())
                     return true;
+                if(player.hasPermission(permission))
+                    return true;
                 if (authority.has(player, permission)) {
                     return true;
                 } else {
                     return false;
                 }
-            } else if (sender instanceof ConsoleCommandSender) {
-                return true;
-            }
-            return false;
+            } else 
+                return sender.hasPermission(permission);
         } else {
             if (sender instanceof Player) {
                 Player person = (Player)sender;
                 if(person.isOp())
                     return true;
+                if(person.hasPermission(permission))
+                    return true;
             }
-            else if(sender instanceof ConsoleCommandSender)
-            {
-                return true;
-            }
+            else
+                return sender.hasPermission(permission);
             return false;
         }
     }
