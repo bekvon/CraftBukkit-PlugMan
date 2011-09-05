@@ -24,7 +24,6 @@ import com.nijiko.permissions.PermissionHandler;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
-import org.bukkit.command.ConsoleCommandSender;
 
 /**
  *
@@ -69,13 +68,17 @@ public class PlugMan extends JavaPlugin {
     }
 
     private boolean doCommand(CommandSender sender, String args[]) {
+        
+        boolean error = false;
+        ArrayList<String> out = new ArrayList<String>();
+        
         if (args.length == 0) {
             return false;
         }
 
         String command = args[0];
 
-        if (command.equals("list") || command.equals("vlist")) {
+        if (command.equals("list") || command.equals("vlist")  && !error) {
             if (args.length >= 2) {
                 try {
                     int page = Integer.parseInt(args[1]);
@@ -96,61 +99,69 @@ public class PlugMan extends JavaPlugin {
             return true;
         }
         
-        if (args.length < 2) {
-            sender.sendMessage("§cYou must specify a Plugin Name!");
-            return true;
+        if (args.length < 2  && !error) {
+            out.add("<red>You must specify a Plugin Name!");
+            error = true;
         }
 
         int pNameStart = 1;
         
-        if(args[0].equals("describe"))
-        {
+        if(args[0].equals("describe")  && !error) {
             pNameStart = 2;
         }
 
-        StringBuilder pname = new StringBuilder();
-        for (int i = pNameStart; i < args.length; i++) {
-            if (i == pNameStart) {
-                pname.append(args[i]);
-            } else {
-                pname.append(" ").append(args[i]);
+        String pluginName = "";
+        
+        if (!error) {
+            StringBuilder pname = new StringBuilder();
+            for (int i = pNameStart; i < args.length; i++) {
+                if (i == pNameStart) {
+                    pname.append(args[i]);
+                } else {
+                    pname.append(" ").append(args[i]);
+                }
             }
+            pluginName = pname.toString();
         }
-        String pluginName = pname.toString();
 
-        if (command.equals("load")) {
+        if (command.equals("load")  && !error) {
             loadPlugin(sender, pluginName);
             return true;
         }
 
-        Plugin targetPlugin = serverPM.getPlugin(pluginName);
-        if (targetPlugin == null) {
-            sender.sendMessage("§cInvalid plugin, check name and try again.");
-            return true;
+        Plugin targetPlugin = null;
+        if (!error)
+            targetPlugin = serverPM.getPlugin(pluginName);
+        if (targetPlugin == null  && !error) {
+            out.add("<red>Invalid plugin, check name and try again.");
+            error = true;
         }
 
-        if (command.equals("reload")) {
+        if (command.equals("reload")  && !error) {
             reloadPlugin(sender, targetPlugin);
             return true;
-        } else if (command.equals("disable")) {
+        } else if (command.equals("disable")  && !error) {
             disablePlugin(sender, targetPlugin);
             return true;
-        } else if (command.equals("enable")) {
+        } else if (command.equals("enable")  && !error) {
             enablePlugin(sender, targetPlugin);
             return true;
-        } else if (command.equals("info")) {
+        } else if (command.equals("info")  && !error) {
             getPluginInfo(sender, targetPlugin);
             return true;
-        }
-        else if(command.equals("usage"))
-        {
+        } else if(command.equals("usage")  && !error) {
             listCommands(sender,targetPlugin);
             return true;
-        }
-        else if(command.equals("describe"))
-        {
+        } else if(command.equals("describe")  && !error) {
             describeCommand(sender,targetPlugin,args[1]);
             return true;
+        }
+        
+        for (String s : out) {
+            if (sender instanceof Player)
+                sender.sendMessage(ChatTools.colorMessage(s, "PlugMan"));
+            else
+                sender.sendMessage(ChatTools.stripColor(s));
         }
         return false;
     }
@@ -182,7 +193,7 @@ public class PlugMan extends JavaPlugin {
                     return false;
                 }
             } else 
-                return sender.hasPermission(permission);
+                return true;
         } else {
             if (sender instanceof Player) {
                 Player person = (Player)sender;
@@ -192,14 +203,14 @@ public class PlugMan extends JavaPlugin {
                     return true;
             }
             else
-                return sender.hasPermission(permission);
+                return true;
             return false;
         }
     }
 
     private void listPluginsByPage(CommandSender sender, int page, boolean appendVersion) {
         if (!checkAuthority(sender, "plugman.admin") && !checkAuthority(sender, "plugman.list")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         StringBuilder pluginList = new StringBuilder();
@@ -207,10 +218,10 @@ public class PlugMan extends JavaPlugin {
         int pagecount = (int) Math.ceil(((double)plugins.length) / ((double)10));
         if(page>pagecount || page < 1)
         {
-            sender.sendMessage("§cInvalid page...");
+            sender.sendMessage("<red>Invalid page...");
             return;
         }
-        pluginList.append("§ePlugin List <Page §a").append(page).append("§e of §a").append(pagecount).append("§e>: ");
+        pluginList.append("<yellow>Plugin List <Page <green>").append(page).append("<yellow> of <green>").append(pagecount).append("<yellow>>: ");
 
         page = page - 1;
         int firstplugin = 10 * page;
@@ -228,9 +239,9 @@ public class PlugMan extends JavaPlugin {
         for (int i = firstplugin; i < lastplugin; i++) {
             Plugin thisPlugin = plugins[i];
             if (thisPlugin.isEnabled()) {
-                pluginList.append(" §a\"");
+                pluginList.append(" <green>\"");
             } else {
-                pluginList.append(" §c\"");
+                pluginList.append(" <red>\"");
             }
             pluginList.append(thisPlugin.getDescription().getName());
             if (appendVersion) {
@@ -238,59 +249,69 @@ public class PlugMan extends JavaPlugin {
             }
             pluginList.append("\"");
         }
-        sender.sendMessage(pluginList.toString());
+        if (sender instanceof Player)
+            sender.sendMessage(ChatTools.colorMessage(pluginList.toString(), "PlugMan"));
+        else
+            sender.sendMessage(ChatTools.stripColor(pluginList.toString()));
     }
 
     private void listPlugins(CommandSender sender, boolean appendVersion) {
         if (!checkAuthority(sender, "plugman.admin") && !checkAuthority(sender, "plugman.list")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         StringBuilder pluginList = new StringBuilder();
         Plugin[] plugins = serverPM.getPlugins();
 
-        pluginList.append("§ePlugin List:");
+        pluginList.append("<yellow>Plugin List:");
 
         for (int i = 0; i < plugins.length; i++) {
             Plugin thisPlugin = plugins[i];
             if (thisPlugin.isEnabled()) {
-                pluginList.append(" §a\"");
+                pluginList.append(" <green>\"");
             } else {
-                pluginList.append(" §c\"");
+                pluginList.append(" <red>\"");
             }
             pluginList.append(thisPlugin.getDescription().getName());
             if(appendVersion)
                 pluginList.append(" [").append(thisPlugin.getDescription().getVersion()).append("]");
             pluginList.append("\"");
         }
-        sender.sendMessage(pluginList.toString());
+        if (sender instanceof Player)
+            sender.sendMessage(ChatTools.colorMessage(pluginList.toString(), "PlugMan"));
+        else
+            sender.sendMessage(ChatTools.stripColor(pluginList.toString()));
     }
 
     private void getPluginInfo(CommandSender sender, Plugin targetPlugin) {
         String pluginName = targetPlugin.getDescription().getName();
+        String version = targetPlugin.getDescription().getVersion();
+        ArrayList<String> authors = targetPlugin.getDescription().getAuthors();
+        String descript = targetPlugin.getDescription().getDescription();
+        ArrayList<String> out = new ArrayList<String>();
+        
         if (!checkAuthority(sender, "plugman.admin") && !checkAuthority(sender, "plugman.list")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         if (targetPlugin.isEnabled()) {
-            sender.sendMessage("§e[" + targetPlugin.getDescription().getName() + "] Status: §aEnabled");
+            out.add("<yellow>[" + targetPlugin.getDescription().getName() + "] Status: <green>Enabled");
         } else {
-            sender.sendMessage("§e[" + targetPlugin.getDescription().getName() + "] Status: §cDisabled");
+            out.add("<yellow>[" + targetPlugin.getDescription().getName() + "] Status: <red>Disabled");
         }
 
-        String version = targetPlugin.getDescription().getVersion();
         if (version == null || version.equals("")) {
-            sender.sendMessage("§c" + pluginName + " has a invalid version field.");
+            out.add("<red>" + pluginName + " has a invalid version field.");
         } else {
-            sender.sendMessage("Version: §a" + targetPlugin.getDescription().getVersion());
+            out.add("Version: <green>" + targetPlugin.getDescription().getVersion());
         }
 
-        ArrayList<String> authors = targetPlugin.getDescription().getAuthors();
+        
         if (authors.isEmpty()) {
-            sender.sendMessage("§c" + pluginName + " has no authors listed.");
+            out.add("<red>" + pluginName + " has no authors listed.");
         } else {
             StringBuilder authorString = new StringBuilder();
-            authorString.append("§eAuthor(s): §a");
+            authorString.append("<yellow>Author(s): <green>");
             for (int i = 0; i < authors.size(); i++) {
                 if (i == 0) {
                     authorString.append(authors.get(i));
@@ -298,57 +319,88 @@ public class PlugMan extends JavaPlugin {
                     authorString.append(", ").append(authors.get(i));
                 }
             }
-            sender.sendMessage(authorString.toString());
+            out.add(authorString.toString());
         }
 
-        String descript = targetPlugin.getDescription().getDescription();
+        
         if (descript == null || descript.equals("")) {
-            sender.sendMessage("§c" + pluginName + " has a invalid description field.");
+            out.add("<red>" + pluginName + " has a invalid description field.");
         } else {
-            sender.sendMessage("§eDescription: §f" + targetPlugin.getDescription().getDescription());
+            out.add("<yellow>Description: <white>" + targetPlugin.getDescription().getDescription());
+        }
+        for (String s : out) {
+            if (sender instanceof Player)
+                sender.sendMessage(ChatTools.colorMessage(s, "PlugMan"));
+            else
+                sender.sendMessage(ChatTools.stripColor(s));
         }
 
     }
 
     private void disablePlugin(CommandSender sender, Plugin targetPlugin) {
         String pluginName = targetPlugin.getDescription().getName();
+        ArrayList<String> out = new ArrayList<String>();
+        boolean error = false;
+        
         if (!checkAuthority(sender, "plugman.admin")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         if (targetPlugin.isEnabled() == false) {
-            sender.sendMessage("§ePlugin §c[" + pluginName + "]§e is already disabled!");
-            return;
+            out.add("<yellow>Plugin <red>[" + pluginName + "]<yellow> is already disabled!");
+            error = true;
         }
-        serverPM.disablePlugin(targetPlugin);
-        if (!targetPlugin.isEnabled()) {
-            sender.sendMessage("§eDisabled: §c[" + pluginName + "]");
-        } else {
-            sender.sendMessage("§ePlugin §cFAILED§e to Disable: §a[" + pluginName + "]");
+        if (!error) {
+            serverPM.disablePlugin(targetPlugin);
+            if (!targetPlugin.isEnabled()) {
+                out.add("<red>Disabled: <red>[" + pluginName + "]");
+            } else {
+                out.add("<yellow>Plugin <red>FAILED<yellow> to Disable: <green>[" + pluginName + "]");
+            }
         }
+        
+        for (String s : out) {
+            if (sender instanceof Player)
+                sender.sendMessage(ChatTools.colorMessage(s, "PlugMan"));
+            else
+                sender.sendMessage(ChatTools.stripColor(s));
+        }
+        
     }
 
     private void enablePlugin(CommandSender sender, Plugin targetPlugin) {
         String pluginName = targetPlugin.getDescription().getName();
+        ArrayList<String> out = new ArrayList<String>();
+        boolean error = false;
+        
         if (!checkAuthority(sender, "plugman.admin")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         if (targetPlugin.isEnabled() == true) {
-            sender.sendMessage("§ePlugin §a[" + pluginName + "]§e is already enabled!");
-            return;
+            out.add("<yellow>Plugin <green>[" + pluginName + "]<yellow> is already enabled!");
+            error = true;
         }
-        serverPM.enablePlugin(targetPlugin);
-        if (targetPlugin.isEnabled()) {
-            sender.sendMessage("§eEnabled: §a[" + pluginName + "]");
-        } else {
-            sender.sendMessage("§ePlugin §cFAILED§e to Enable: §c[" + pluginName + "]");
+        if (!error) {
+            serverPM.enablePlugin(targetPlugin);
+            if (targetPlugin.isEnabled()) {
+                out.add("<yellow>Enabled: <green>[" + pluginName + "]");
+            } else {
+                out.add("<yellow>Plugin <red>FAILED<yellow> to Enable: <red>[" + pluginName + "]");
+            }
         }
-    }
+        
+        for (String s : out) {
+            if (sender instanceof Player)
+                sender.sendMessage(ChatTools.colorMessage(s, "PlugMan"));
+            else
+                sender.sendMessage(ChatTools.stripColor(s));
+        }
+    }   
 
     private void reloadPlugin(CommandSender sender, Plugin targetPlugin) {
         if (!checkAuthority(sender, "plugman.admin")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         disablePlugin(sender,targetPlugin);
@@ -356,8 +408,10 @@ public class PlugMan extends JavaPlugin {
     }
 
     private void loadPlugin(CommandSender sender, String pluginName) {
+        ArrayList<String> out = new ArrayList<String>();
+        
         if (!checkAuthority(sender, "plugman.admin")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         File pluginFile = new File(new File("plugins"), pluginName + ".jar");
@@ -366,31 +420,41 @@ public class PlugMan extends JavaPlugin {
                 Plugin newPlugin = serverPM.loadPlugin(pluginFile);
                 if (newPlugin != null) {
                     pluginName = newPlugin.getDescription().getName();
-                    sender.sendMessage("§ePlugin Loaded: §c[" + pluginName + "]");
+                    out.add("<yellow>Plugin Loaded: <red>[" + pluginName + "]");
                     serverPM.enablePlugin(newPlugin);
                     if (newPlugin.isEnabled()) {
-                        sender.sendMessage("§ePlugin Enabled: §a[" + pluginName + "]");
+                        out.add("<yellow>Plugin Enabled: <green>[" + pluginName + "]");
                     } else {
-                        sender.sendMessage("§ePlugin §cFAILED§e to Enable:§c[" + pluginName + "]");
+                        out.add("<yellow>Plugin <red>FAILED<yellow> to Enable:<red>[" + pluginName + "]");
                     }
                 } else {
-                    sender.sendMessage("§ePlugin §cFAILED§e to Load!");
+                    out.add("<yellow>Plugin <red>FAILED<yellow> to Load!");
                 }
             } catch (UnknownDependencyException ex) {
-                sender.sendMessage("§cFile exists but is not a plugin file.");
+                out.add("<red>File exists but is not a plugin file.");
             } catch (InvalidPluginException ex) {
-                sender.sendMessage("§cFile exists but is not a plugin file.");
+                out.add("<red>File exists but is not a plugin file.");
             } catch (InvalidDescriptionException ex) {
-                sender.sendMessage("§cPlugin exists but is invalid.");
+                out.add("<red>Plugin exists but is invalid.");
             }
         } else {
-            sender.sendMessage("§cFile does NOT exist, check name and try again.");
+            out.add("<red>File does NOT exist, check name and try again.");
+        }
+        
+        for (String s : out) {
+            if (sender instanceof Player)
+                sender.sendMessage(ChatTools.colorMessage(s, "PlugMan"));
+            else
+                sender.sendMessage(ChatTools.stripColor(s));
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private void listCommands(CommandSender sender, Plugin targetPlugin) {
+        ArrayList<String> out = new ArrayList<String>();
+        
         if (!checkAuthority(sender, "plugman.admin") && !checkAuthority(sender, "plugman.describe")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         ArrayList<String> parsedCommands = new ArrayList<String>();
@@ -408,10 +472,10 @@ public class PlugMan extends JavaPlugin {
         {
             StringBuilder commandsOut = new StringBuilder();
             if(targetPlugin.isEnabled())
-                commandsOut.append("§a");
+                commandsOut.append("<green>");
             else
-                commandsOut.append("§c");
-            commandsOut.append("[").append(targetPlugin.getDescription().getName()).append("]§e Command List: ");
+                commandsOut.append("<red>");
+            commandsOut.append("[").append(targetPlugin.getDescription().getName()).append("]<yellow> Command List: ");
             for(int i = 0; i < parsedCommands.size(); i ++)
             {
                 String thisCommand = parsedCommands.get(i);
@@ -420,37 +484,54 @@ public class PlugMan extends JavaPlugin {
                     sender.sendMessage(commandsOut.toString());
                     commandsOut = new StringBuilder();
                 }
-                commandsOut.append(" §e\"").append(thisCommand).append("\"");
+                commandsOut.append(" <yellow>\"").append(thisCommand).append("\"");
             }
-            sender.sendMessage(commandsOut.toString());
+            out.add(commandsOut.toString());
         }
         else
-            sender.sendMessage("§cPlugin has no registered commands...");
+            out.add("<red>Plugin has no registered commands...");
+        
+        for (String s : out) {
+            if (sender instanceof Player)
+                sender.sendMessage(ChatTools.colorMessage(s, "PlugMan"));
+            else
+                sender.sendMessage(ChatTools.stripColor(s));
+        }
     }
 
-    private void describeCommand(CommandSender sender, Plugin targetPlugin, String commandName)
-    {
+    @SuppressWarnings("rawtypes")
+    private void describeCommand(CommandSender sender, Plugin targetPlugin, String commandName) {
+        ArrayList<String> out = new ArrayList<String>();
+    
         if (!checkAuthority(sender, "plugman.admin") && !checkAuthority(sender, "plugman.describe")) {
-            sender.sendMessage("§cYou don't have permission to do this...");
+            sender.sendMessage("<red>You don't have permission to do this...");
             return;
         }
         LinkedHashMap commands = (LinkedHashMap) targetPlugin.getDescription().getCommands();
         if(commands.containsKey(commandName))
         {
+
             LinkedHashMap command = (LinkedHashMap) commands.get(commandName);
             if(command.containsKey("description"))
             {
                String desc = (String) command.get("description");
-               sender.sendMessage("§a"+ commandName + " - §e" + desc);
+               out.add("<green>"+ commandName + " - <yellow>" + desc);
             }
             else
             {
-                sender.sendMessage("§cCommand has no built in description...");
+                out.add("<red>Command has no built in description...");
             }
         }
         else
         {
-            sender.sendMessage("§cCommand not found in plugin...");
+            out.add("<red>Command not found in plugin...");
+        }
+        
+        for (String s : out) {
+            if (sender instanceof Player)
+                sender.sendMessage(ChatTools.colorMessage(s, "PlugMan"));
+            else
+                sender.sendMessage(ChatTools.stripColor(s));
         }
     }
 }
