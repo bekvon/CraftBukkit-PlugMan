@@ -13,10 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- *
- * @author Administrator
- */
 public class PlugMan extends JavaPlugin {
 
     Server mcserver;
