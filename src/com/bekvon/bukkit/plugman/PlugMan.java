@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -21,6 +22,10 @@ public class PlugMan extends JavaPlugin {
     Server mcserver;
     Plugin permPlug;
     PluginManager serverPM;
+    ChatColor red = ChatColor.RED;
+    ChatColor green = ChatColor.GREEN;
+    ChatColor yellow = ChatColor.YELLOW;
+    ChatColor white = ChatColor.WHITE;
 
     public PlugMan() {
     }
@@ -79,7 +84,7 @@ public class PlugMan extends JavaPlugin {
         }
 
         if (args.length < 2 && !error) {
-            out.add("<red>You must specify a Plugin Name!");
+            out.add(red + "You must specify a Plugin Name!");
             error = true;
         }
 
@@ -113,7 +118,7 @@ public class PlugMan extends JavaPlugin {
             targetPlugin = serverPM.getPlugin(pluginName);
         }
         if (targetPlugin == null && !error) {
-            out.add("<red>Invalid plugin, check name and try again.");
+            out.add(red + "Invalid plugin, check name and try again.");
             error = true;
         }
 
@@ -149,17 +154,17 @@ public class PlugMan extends JavaPlugin {
 
     private void listPluginsByPage(CommandSender sender, int page, boolean appendVersion) {
         if (!(sender.hasPermission("plugman.admin")) && !(sender.hasPermission("plugman.list"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         StringBuilder pluginList = new StringBuilder();
         Plugin[] plugins = serverPM.getPlugins();
         int pagecount = (int) Math.ceil(((double) plugins.length) / ((double) 10));
         if (page > pagecount || page < 1) {
-            sender.sendMessage("<red>Invalid page...");
+            sender.sendMessage(red + "Invalid page...");
             return;
         }
-        pluginList.append("<yellow>Plugin List <Page <green>").append(page).append("<yellow> of <green>").append(pagecount).append("<yellow>>: ");
+        pluginList.append(yellow + "Plugin List <Page>" + green).append(page).append(yellow + " of " + green).append(pagecount).append(yellow + ">: ");
 
         page = page - 1;
         int firstplugin = 10 * page;
@@ -175,9 +180,9 @@ public class PlugMan extends JavaPlugin {
         for (int i = firstplugin; i < lastplugin; i++) {
             Plugin thisPlugin = plugins[i];
             if (thisPlugin.isEnabled()) {
-                pluginList.append(" <green>\"");
+                pluginList.append(green + " \"");
             } else {
-                pluginList.append(" <red>\"");
+                pluginList.append(red + " \"");
             }
             pluginList.append(thisPlugin.getDescription().getName());
             if (appendVersion) {
@@ -194,20 +199,20 @@ public class PlugMan extends JavaPlugin {
 
     private void listPlugins(CommandSender sender, boolean appendVersion) {
         if (!(sender.hasPermission("plugman.admin")) && !(sender.hasPermission("plugman.list"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         StringBuilder pluginList = new StringBuilder();
         Plugin[] plugins = serverPM.getPlugins();
 
-        pluginList.append("<yellow>Plugin List:");
+        pluginList.append(yellow + "Plugin List:");
 
         for (int i = 0; i < plugins.length; i++) {
             Plugin thisPlugin = plugins[i];
             if (thisPlugin.isEnabled()) {
-                pluginList.append(" <green>\"");
+                pluginList.append(green + " \"");
             } else {
-                pluginList.append(" <red>\"");
+                pluginList.append(red + " \"");
             }
             pluginList.append(thisPlugin.getDescription().getName());
             if (appendVersion) {
@@ -230,27 +235,27 @@ public class PlugMan extends JavaPlugin {
         ArrayList<String> out = new ArrayList<String>();
 
         if (!(sender.hasPermission("plugman.admin")) && !(sender.hasPermission("plugman.list"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         if (targetPlugin.isEnabled()) {
-            out.add("<yellow>[" + targetPlugin.getDescription().getName() + "] Status: <green>Enabled");
+            out.add(yellow + "[" + targetPlugin.getDescription().getName() + "] Status: " + green + "Enabled");
         } else {
-            out.add("<yellow>[" + targetPlugin.getDescription().getName() + "] Status: <red>Disabled");
+            out.add(yellow + "[" + targetPlugin.getDescription().getName() + "] Status: " + red + "Disabled");
         }
 
         if (version == null || version.equals("")) {
-            out.add("<red>" + pluginName + " has a invalid version field.");
+            out.add(red + "" + pluginName + " has a invalid version field.");
         } else {
-            out.add("Version: <green>" + targetPlugin.getDescription().getVersion());
+            out.add("Version: "+ green + targetPlugin.getDescription().getVersion());
         }
 
 
         if (authors.isEmpty()) {
-            out.add("<red>" + pluginName + " has no authors listed.");
+            out.add(red + "" + pluginName + " has no authors listed.");
         } else {
             StringBuilder authorString = new StringBuilder();
-            authorString.append("<yellow>Author(s): <green>");
+            authorString.append(yellow + "Author(s): " + green);
             for (int i = 0; i < authors.size(); i++) {
                 if (i == 0) {
                     authorString.append(authors.get(i));
@@ -263,9 +268,9 @@ public class PlugMan extends JavaPlugin {
 
 
         if (descript == null || descript.equals("")) {
-            out.add("<red>" + pluginName + " has a invalid description field.");
+            out.add(red + "" + pluginName + " has a invalid description field.");
         } else {
-            out.add("<yellow>Description: <white>" + targetPlugin.getDescription().getDescription());
+            out.add(yellow + "Description: " + white + targetPlugin.getDescription().getDescription());
         }
         for (String s : out) {
             if (sender instanceof Player) {
@@ -283,19 +288,19 @@ public class PlugMan extends JavaPlugin {
         boolean error = false;
 
         if (!(sender.hasPermission("plugman.admin"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         if (targetPlugin.isEnabled() == false) {
-            out.add("<yellow>Plugin <red>[" + pluginName + "]<yellow> is already disabled!");
+            out.add(yellow + "Plugin " +red+ "[" + pluginName + "]" + yellow + " is already disabled!");
             error = true;
         }
         if (!error) {
             serverPM.disablePlugin(targetPlugin);
             if (!targetPlugin.isEnabled()) {
-                out.add("<yellow>Disabled: <red>[" + pluginName + "]");
+                out.add(yellow +"Disabled: " + red + "[" + pluginName + "]");
             } else {
-                out.add("<yellow>Plugin <red>FAILED<yellow> to Disable: <green>[" + pluginName + "]");
+                out.add(yellow + "Plugin " + red + "FAILED" + yellow + " to Disable: " + green + "[" + pluginName + "]");
             }
         }
 
@@ -315,19 +320,19 @@ public class PlugMan extends JavaPlugin {
         boolean error = false;
 
         if (!(sender.hasPermission("plugman.admin"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         if (targetPlugin.isEnabled() == true) {
-            out.add("<yellow>Plugin <green>[" + pluginName + "]<yellow> is already enabled!");
+            out.add(yellow + "Plugin " + green + "[" + pluginName + "]" + yellow + " is already enabled!");
             error = true;
         }
         if (!error) {
             serverPM.enablePlugin(targetPlugin);
             if (targetPlugin.isEnabled()) {
-                out.add("<yellow>Enabled: <green>[" + pluginName + "]");
+                out.add(yellow + "Enabled: " + green + "[" + pluginName + "]");
             } else {
-                out.add("<yellow>Plugin <red>FAILED<yellow> to Enable: <red>[" + pluginName + "]");
+                out.add(yellow + "Plugin " + red + "FAILED" + yellow + " to Enable: " + red + "[" + pluginName + "]");
             }
         }
 
@@ -342,7 +347,7 @@ public class PlugMan extends JavaPlugin {
 
     private void reloadPlugin(CommandSender sender, Plugin targetPlugin) {
         if (!(sender.hasPermission("plugman.admin"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         disablePlugin(sender, targetPlugin);
@@ -353,7 +358,7 @@ public class PlugMan extends JavaPlugin {
         ArrayList<String> out = new ArrayList<String>();
 
         if (!(sender.hasPermission("plugman.admin"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         File pluginFile = new File(new File("plugins"), pluginName + ".jar");
@@ -362,25 +367,25 @@ public class PlugMan extends JavaPlugin {
                 Plugin newPlugin = serverPM.loadPlugin(pluginFile);
                 if (newPlugin != null) {
                     pluginName = newPlugin.getDescription().getName();
-                    out.add("<yellow>Plugin Loaded: <red>[" + pluginName + "]");
+                    out.add(yellow + "Plugin Loaded: " + red + "[" + pluginName + "]");
                     serverPM.enablePlugin(newPlugin);
                     if (newPlugin.isEnabled()) {
-                        out.add("<yellow>Plugin Enabled: <green>[" + pluginName + "]");
+                        out.add(yellow + "Plugin Enabled: " + green + "[" + pluginName + "]");
                     } else {
-                        out.add("<yellow>Plugin <red>FAILED<yellow> to Enable:<red>[" + pluginName + "]");
+                        out.add(yellow + "Plugin " + red + "FAILED" + yellow + " to Enable:" + red + "[" + pluginName + "]");
                     }
                 } else {
-                    out.add("<yellow>Plugin <red>FAILED<yellow> to Load!");
+                    out.add(red + "Plugin FAILED" + yellow + " to Load!");
                 }
             } catch (UnknownDependencyException ex) {
-                out.add("<red>File exists but is not a plugin file.");
+                out.add(red + "File exists but is not a plugin file.");
             } catch (InvalidPluginException ex) {
-                out.add("<red>File exists but is not a plugin file.");
+                out.add(red + "File exists but is not a plugin file.");
             } catch (InvalidDescriptionException ex) {
-                out.add("<red>Plugin exists but is invalid.");
+                out.add(red + "Plugin exists but is invalid.");
             }
         } else {
-            out.add("<red>File does NOT exist, check name and try again.");
+            out.add(red + "File does NOT exist, check name and try again.");
         }
 
         for (String s : out) {
@@ -397,7 +402,7 @@ public class PlugMan extends JavaPlugin {
         ArrayList<String> out = new ArrayList<String>();
 
         if (!(sender.hasPermission("plugman.admin")) && !(sender.hasPermission("plugman.describe"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         ArrayList<String> parsedCommands = new ArrayList<String>();
@@ -414,22 +419,22 @@ public class PlugMan extends JavaPlugin {
         if (!parsedCommands.isEmpty()) {
             StringBuilder commandsOut = new StringBuilder();
             if (targetPlugin.isEnabled()) {
-                commandsOut.append("<green>");
+                commandsOut.append(green);
             } else {
-                commandsOut.append("<red>");
+                commandsOut.append(red + "");
             }
-            commandsOut.append("[").append(targetPlugin.getDescription().getName()).append("]<yellow> Command List: ");
+            commandsOut.append("[").append(targetPlugin.getDescription().getName()).append("]" + yellow + " Command List: ");
             for (int i = 0; i < parsedCommands.size(); i++) {
                 String thisCommand = parsedCommands.get(i);
                 if (commandsOut.length() + thisCommand.length() > 55) {
                     sender.sendMessage(commandsOut.toString());
                     commandsOut = new StringBuilder();
                 }
-                commandsOut.append(" <yellow>\"").append(thisCommand).append("\"");
+                commandsOut.append(yellow + "\"").append(thisCommand).append("\"");
             }
             out.add(commandsOut.toString());
         } else {
-            out.add("<red>Plugin has no registered commands...");
+            out.add(red + "Plugin has no registered commands...");
         }
 
         for (String s : out) {
@@ -446,7 +451,7 @@ public class PlugMan extends JavaPlugin {
         ArrayList<String> out = new ArrayList<String>();
 
         if (!(sender.hasPermission("plugman.admin")) && !(sender.hasPermission("plugman.describe"))) {
-            sender.sendMessage("<red>You don't have permission to do this...");
+            sender.sendMessage(red + "You don't have permission to do this...");
             return;
         }
         LinkedHashMap commands = (LinkedHashMap) targetPlugin.getDescription().getCommands();
@@ -455,12 +460,12 @@ public class PlugMan extends JavaPlugin {
             LinkedHashMap command = (LinkedHashMap) commands.get(commandName);
             if (command.containsKey("description")) {
                 String desc = (String) command.get("description");
-                out.add("<green>" + commandName + " - <yellow>" + desc);
+                out.add(green + commandName + " - " + yellow + desc);
             } else {
-                out.add("<red>Command has no built in description...");
+                out.add(red + "Command has no built in description...");
             }
         } else {
-            out.add("<red>Command not found in plugin...");
+            out.add(red + "Command not found in plugin...");
         }
 
         for (String s : out) {
